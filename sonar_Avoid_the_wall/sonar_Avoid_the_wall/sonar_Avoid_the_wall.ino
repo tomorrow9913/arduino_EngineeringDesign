@@ -11,28 +11,21 @@ int MOTORR_PIN = 9;
 int TRIG_PIN = 3;
 int ECHO_PIN = 4;
 
-long duration, cm, in;
-
 Servo LServo;
 Servo RServo;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
     Serial.begin(9600);
-    goForward();
 
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
+
     LServo.attach(MOTORL_PIN);
     RServo.attach(MOTORR_PIN);
 }
 
-int leftSpeed = 1460; // +가 앞 -가 뒤
-int rightSpeed = 1460; // -가 앞 +가 뒤
-
-// the loop function runs over and over again until power down or reset
-void loop() {
-    int distance;
+int SonarDistance() {
     int sonarPwn;
 
     digitalWrite(TRIG_PIN, LOW);
@@ -43,52 +36,52 @@ void loop() {
     digitalWrite(TRIG_PIN, LOW);
 
     sonarPwn = pulseIn(ECHO_PIN, 1, 18500L);
-    distance = sonarPwn / 60;
+    return sonarPwn / 60;
+}
+
+void TurnLeft(int standard, int speed) {
+    LServo.write(standard - speed); // +가 앞 -가 뒤
+    RServo.write(standard - speed); // -가 앞 +가 뒤
+}
+
+void TurnRight(int standard, int speed) {
+    LServo.write(standard + speed); // +가 앞 -가 뒤
+    RServo.write(standard + speed); // -가 앞 +가 뒤
+}
+
+void goForward(int standard, int speed) {
+    LServo.write(standard + speed); // +가 앞 -가 뒤
+    RServo.write(standard - speed); // -가 앞 +가 뒤
+}
+
+int flag = 0;
+int speed = 30;
+int leftSpeed = 1460; // +가 앞 -가 뒤
+int rightSpeed = 1460; // -가 앞 +가 뒤
+
+// the loop function runs over and over again until power down or reset
+void loop() {
+    int standard = 92;
+    int distance = 11;
+    distance = SonarDistance();
 
     Serial.print("distance: ");
     Serial.println(distance);
 
-
-    if (distance < 10) {
-        RServo.write(0);
-        LServo.write(0);
-        delay(800);
+    if (distance && distance <= 10) {    
+        TurnLeft(standard, speed);
+        delay(840);
+        flag = 1;
     }
     else {
-        RServo.write(30);
-        LServo.write(120);
+        goForward(standard, speed);
+        if (flag) {
+            delay(2000);
+            speed = 0;
+        }
     }
-    Serial.print("right: ");
-    Serial.println(rightSpeed);
-    Serial.print("left: ");
-    Serial.println(leftSpeed);
-}
-
-void goForward() {
-    digitalWrite(MOTORL_PIN, HIGH);
-    delayMicroseconds(1470 + 500);
-    digitalWrite(MOTORL_PIN, LOW);
-
-    digitalWrite(MOTORR_PIN, HIGH);
-    delayMicroseconds(1470 - 500);
-    digitalWrite(MOTORR_PIN, LOW);
-}
-
-void Backward() {
-    digitalWrite(MOTORL_PIN, HIGH);
-    delayMicroseconds(1470 - 500);
-    digitalWrite(MOTORL_PIN, LOW);
-
-    digitalWrite(MOTORR_PIN, HIGH);
-    delayMicroseconds(1470 + 500);
-    digitalWrite(MOTORR_PIN, LOW);
-}
-
-void turnRight() {
-    digitalWrite(MOTORL_PIN, HIGH);
-    delayMicroseconds(1470 + 500);
-    digitalWrite(MOTORL_PIN, LOW);
-    digitalWrite(MOTORR_PIN, HIGH);
-    delayMicroseconds(1470 + 500);
-    digitalWrite(MOTORR_PIN, LOW);
+    
+    
+    Serial.print("flag: ");
+    Serial.println(flag);
 }
